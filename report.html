@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Análise | Análise de Acessibilidade</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/globals.css">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 font-sans antialiased text-foreground">
+    
+    <header class="w-full border-b bg-white/80 backdrop-blur-sm dark:bg-gray-800 dark:border-gray-700">
+        <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center">
+                <h1 class="text-2xl font-bold text-foreground">Relatório de Análise</h1>
+            </div>
+            <div class="flex items-center gap-6">
+                <a href="index.html" class="text-base text-muted-foreground hover:text-foreground">Voltar ao Dashboard</a>
+                <a href="#" class="text-base text-muted-foreground hover:text-foreground">Sobre</a>
+            </div>
+        </div>
+    </header>
+    
+    <main class="container mx-auto px-4 py-8 space-y-8">
+        <div id="loading-state" class="text-center py-12">
+            <div class="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-blue-500 mx-auto"></div>
+            <p class="mt-4 text-muted-foreground">Carregando relatório...</p>
+        </div>
+
+        <div id="report-container" class="hidden">
+            </div>
+    </main>
+    
+    <script src="scripts/report.js"></script>
+</body>
+</html>

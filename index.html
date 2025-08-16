@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Análise de Acessibilidade</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../styles/globals.css">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 font-sans antialiased text-foreground">
+    
+    <header class="w-full border-b bg-white/80 backdrop-blur-sm dark:bg-gray-800 dark:border-gray-700">
+        <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center">
+                <h1 class="text-2xl font-bold text-foreground">Framework de Análise de Acessibilidade</h1>
+            </div>
+            <div class="flex items-center gap-6">
+                <nav class="flex items-center gap-6">
+                    <a href="#" class="text-base font-medium text-primary">Dashboard</a>
+                    <a href="#" class="text-base text-muted-foreground hover:text-foreground">Sobre</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+    
+    <main class="container mx-auto px-4 py-8 space-y-8">
+        
+        <div class="w-full max-w-4xl mx-auto p-8 bg-white rounded-lg border dark:bg-gray-800 dark:border-gray-700">
+            <div class="text-center mb-8">
+                <h2 class="text-2xl font-bold mb-3">Análise Rápida de Acessibilidade</h2>
+                <p class="text-muted-foreground">
+                    Cole a URL de uma página web abaixo para iniciar a análise de acessibilidade de forma automática e gratuita.
+                </p>
+            </div>
+            
+            <form id="url-analysis-form" class="space-y-6">
+                <div class="space-y-2">
+                    <input
+                        id="url-input"
+                        type="url"
+                        placeholder="https://www.exemplo.com.br"
+                        class="w-full h-14 text-lg rounded-lg border-2 px-4 py-2 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        required
+                    />
+                </div>
+                
+                <div class="flex justify-center">
+                    <button
+                        type="submit"
+                        id="analyze-button"
+                        class="px-8 py-3 text-lg rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed dark:bg-blue-800 dark:hover:bg-blue-900"
+                    >
+                        Analisar
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="w-full max-w-6xl mx-auto p-8 bg-white rounded-lg border dark:bg-gray-800 dark:border-gray-700">
+            <h2 class="text-xl font-bold mb-6">Últimas Análises</h2>
+            
+            <div id="analyses-table-container">
+                </div>
+        </div>
+    </main>
+    
+    <script src="scripts/dashboard.js"></script>
+</body>
+</html>
