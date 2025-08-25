@@ -4,18 +4,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const analyzeButton = document.getElementById('analyze-button');
     const tableContainer = document.getElementById('analyses-table-container');
 
-    const STORAGE_KEY = 'accessibilityAnalyses';
-    const mockAnalyses = [
-        { id: '1', url: 'https://www.exemplo.com.br', date: new Date('2024-01-15T10:30:00'), status: 'completed', score: 85 },
-        { id: '2', url: 'https://www.loja-virtual.com', date: new Date('2024-01-14T15:45:00'), status: 'processing', score: null },
-        { id: '3', url: 'https://www.blog-noticias.com.br', date: new Date('2024-01-13T09:15:00'), status: 'error', score: null },
-        { id: '4', url: 'https://www.empresa-tech.com', date: new Date('2024-01-12T14:20:00'), status: 'completed', score: 92 },
-        { id: '5', url: 'https://www.portfolio-designer.com', date: new Date('2024-01-11T11:00:00'), status: 'completed', score: 78 }
-    ];
+    const API_URL = 'http://localhost:3000/api/analyses';
 
-    let analyses = JSON.parse(localStorage.getItem(STORAGE_KEY)) || mockAnalyses;
+    async function fetchAnalyses() {
+        try {
+            tableContainer.innerHTML = `
+                <div class="text-center py-12 text-muted-foreground">
+                    <div class="animate-spin rounded-full h-8 w-8 border-4 border-t-4 border-blue-500 mx-auto mb-4"></div>
+                    <p>Carregando análises...</p>
+                </div>
+            `;
+            const response = await fetch(API_URL);
+            if (!response.ok) {
+                throw new Error('Erro ao carregar análises da API');
+            }
+            const analyses = await response.json();
+            renderTable(analyses);
+        } catch (error) {
+            console.error('Erro:', error);
+            tableContainer.innerHTML = `
+                <div class="text-center py-12 text-red-500">
+                    <p>Ocorreu um erro ao conectar com o servidor. Por favor, verifique se o backend está rodando.</p>
+                </div>
+            `;
+        }
+    }
 
-    function renderTable() {
+    function renderTable(analyses) {
         if (analyses.length === 0) {
             tableContainer.innerHTML = `
                 <div class="text-center py-12 text-muted-foreground">
@@ -46,20 +61,28 @@ document.addEventListener('DOMContentLoaded', () => {
                                         </a>
                                     </td>
                                     <td class="py-4 px-6 text-center text-gray-600 dark:text-gray-400">
-                                        ${formatDate(analysis.date)}
+                                        ${formatDate(analysis.createdAt)}
                                     </td>
                                     <td class="py-4 px-6 text-center">
                                         ${getStatusBadge(analysis.status)}
                                     </td>
                                     <td class="py-4 px-6 text-center">
-                                        ${analysis.status === 'completed' ? `
+                                        <div class="flex items-center justify-center gap-2">
+                                            ${analysis.status === 'completed' ? `
+                                                <button
+                                                    onclick="window.location.href='report.html?id=${analysis.id}'"
+                                                    class="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800"
+                                                >
+                                                    Ver Relatório
+                                                </button>
+                                            ` : ''}
                                             <button
-                                                onclick="window.location.href='report.html?id=${analysis.id}'"
-                                                class="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800"
+                                                onclick="deleteAnalysis('${analysis.id}')"
+                                                class="bg-red-100 text-red-700 px-3 py-2 rounded-lg hover:bg-red-200 transition-colors dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800"
                                             >
-                                                Ver Relatório
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                                             </button>
-                                        ` : ''}
+                                        </div>
                                     </td>
                                 </tr>
                             `).join('')}
@@ -85,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
         switch (status) {
             case 'processing':
                 return `<span class="${baseClasses} bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                            <svg class="animate-spin h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 0014.015 1H12a3 3 0 00-3 3v4.582m6.115 5.394A8.001 8.001 0 0110.015 23H12a3 3 0 003-3v-4.582m-6.115-5.394A8.001 8.001 0 0114.015 1H12a3 3 0 003-3v4.582m-6.115-5.394A8.001 8.001 0 0110.015 23H12a3 3 0 003-3v-4.582m-6.115-5.394A8.001 8.001 0 0110.015 23H12a3 3 0 003-3v-4.582M4 4v5h.582m15.356 2A8.001 8.001 0 0014.015 1H12a3 3 0 00-3 3v4.582m6.115 5.394A8.001 8.001 0 0110.015 23H12a3 3 0 003-3v-4.582m-6.115-5.394A8.001 8.001 0 0114.015 1H12a3 3 0 003-3v4.582m-6.115-5.394A8.001 8.001 0 0110.015 23H12a3 3 0 003-3v-4.582" /> Processando</span>
+                            <svg class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 0014.015 1H12a3 3 0 00-3 3v4.582m6.115 5.394A8.001 8.001 0 0110.015 23H12a3 3 0 003-3v-4.582m-6.115-5.394A8.001 8.001 0 0114.015 1H12a3 3 0 003-3v4.582m-6.115-5.394A8.001 8.001 0 0110.015 23H12a3 3 0 003-3v-4.582m-6.115-5.394A8.001 8.001 0 0110.015 23H12a3 3 0 003-3v-4.582M4 4v5h.582m15.356 2A8.001 8.001 0 0014.015 1H12a3 3 0 00-3 3v4.582m6.115 5.394A8.001 8.001 0 0110.015 23H12a3 3 0 003-3v-4.582m-6.115-5.394A8.001 8.001 0 0114.015 1H12a3 3 0 003-3v4.582m-6.115-5.394A8.001 8.001 0 0110.015 23H12a3 3 0 003-3v-4.582" />
                             Processando
                         </span>`;
             case 'completed':
@@ -103,69 +126,67 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function saveAnalyses() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(analyses));
-    }
-
-    function handleFormSubmission(event) {
+    async function handleFormSubmission(event) {
         event.preventDefault();
         const url = urlInput.value.trim();
 
-        // Validação da URL
-        try {
-            new URL(url);
-        } catch (_) {
-            urlInput.classList.remove('border-green-300', 'focus:ring-green-200');
-            urlInput.classList.add('border-red-300', 'focus:ring-red-200');
-            alert('Por favor, insira uma URL válida.');
-            return;
-        }
-
-        // Simula a análise
-        const newAnalysis = {
-            id: 'mock-' + Date.now(),
-            url: url,
-            date: new Date(),
-            status: 'processing'
-        };
-
-        analyses.unshift(newAnalysis);
-        saveAnalyses();
-        renderTable();
-        urlInput.value = '';
-        urlInput.classList.remove('border-red-300', 'border-green-300', 'focus:ring-red-200', 'focus:ring-green-200');
-
-        // Simulação do resultado assíncrono
-        setTimeout(() => {
-            const index = analyses.findIndex(a => a.id === newAnalysis.id);
-            if (index > -1) {
-                const updatedStatus = Math.random() > 0.1 ? 'completed' : 'error';
-                const score = updatedStatus === 'completed' ? Math.floor(Math.random() * 40) + 60 : null;
-                analyses[index].status = updatedStatus;
-                analyses[index].score = score;
-                saveAnalyses();
-                renderTable();
-                
-                // Mensagem de sucesso/erro
-                if (updatedStatus === 'completed') {
-                    alert('Análise concluída com sucesso!');
-                } else {
-                    alert('Erro ao processar a análise. Tente novamente.');
-                }
-            }
-        }, 3000);
-
         analyzeButton.textContent = 'Analisando...';
         analyzeButton.disabled = true;
-        
-        setTimeout(() => {
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Erro ao iniciar análise');
+            }
+
+            // O backend retorna a nova análise criada, adicionamos ela na lista
+            // e renderizamos a tabela novamente.
+            fetchAnalyses();
+
+            urlInput.value = '';
+            urlInput.classList.remove('border-red-300', 'border-green-300');
+            
+        } catch (error) {
+            console.error('Erro:', error);
+            alert(`Erro: ${error.message}`);
+            urlInput.classList.remove('border-green-300');
+            urlInput.classList.add('border-red-300');
+        } finally {
             analyzeButton.textContent = 'Analisar';
             analyzeButton.disabled = false;
-        }, 3000);
+        }
     }
 
-    form.addEventListener('submit', handleFormSubmission);
+    // Função global para deletar uma análise
+    window.deleteAnalysis = async (id) => {
+        if (!confirm('Tem certeza que deseja deletar esta análise?')) {
+            return;
+        }
+        try {
+            const response = await fetch(`${API_URL}/${id}`, {
+                method: 'DELETE'
+            });
 
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Erro ao deletar análise');
+            }
+
+            alert('Análise deletada com sucesso!');
+            fetchAnalyses(); // Recarrega a tabela após a exclusão
+        } catch (error) {
+            console.error('Erro:', error);
+            alert(`Erro: ${error.message}`);
+        }
+    };
+
+    form.addEventListener('submit', handleFormSubmission);
     urlInput.addEventListener('input', () => {
         try {
             new URL(urlInput.value);
@@ -181,5 +202,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    renderTable();
+    // Inicia o carregamento das análises
+    fetchAnalyses();
+
+    // Simulação de polling para atualizar análises em processamento
+    setInterval(() => {
+        fetchAnalyses();
+    }, 5000);
 });

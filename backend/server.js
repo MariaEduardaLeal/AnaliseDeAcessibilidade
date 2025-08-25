@@ -1,9 +1,13 @@
 const express = require('express');
+const cors = require('cors');
 const sequelize = require('./config/database');
 const analysisRoutes = require('./routes/analysisRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Adiciona o middleware CORS
+app.use(cors());
 
 // Middleware para processar JSON nas requisições
 app.use(express.json());
