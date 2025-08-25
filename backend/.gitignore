@@ -1,0 +1,10 @@
+# Dependências do Node
+/node_modules/
+
+# Arquivos de ambiente
+.env
+/config/config.json
+
+# Logs e arquivos de debug
+npm-debug.log*
+.DS_Store
