@@ -1,0 +1,9 @@
+{
+  "development": {
+    "username": "root",
+    "password": "12345",
+    "database": "analise_acessibilidade",
+    "host": "localhost",
+    "dialect": "mysql"
+  }
+}
