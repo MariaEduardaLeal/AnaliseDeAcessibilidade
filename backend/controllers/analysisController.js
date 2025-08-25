@@ -1,31 +1,77 @@
+const puppeteer = require('puppeteer');
+const { AxePuppeteer } = require('@axe-core/puppeteer');
 const Analysis = require('../models/Analysis');
+
+// Função de análise que será executada em segundo plano
+async function analyzePage(url, analysisId) {
+  let browser = null;
+  try {
+    browser = await puppeteer.launch({
+      headless: true, // Modo sem interface, mais rápido
+    });
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+
+    const axeBuilder = new AxePuppeteer(page, {
+        iframes: false // Não analisar iframes para simplificar
+    });
+
+    const results = await axeBuilder.analyze();
+
+    // A lógica de pontuação e formatação dos resultados pode ser customizada
+    const score = calculateScore(results);
+
+    // Atualiza o registro no banco de dados com os resultados
+    await Analysis.update({
+      status: 'completed',
+      score: score,
+      results: results,
+    }, {
+      where: { id: analysisId },
+    });
+    
+    console.log(`Análise concluída para a URL: ${url}`);
+
+  } catch (error) {
+    console.error(`Erro ao analisar a página ${url}:`, error);
+    // Em caso de erro, atualiza o status no banco de dados
+    await Analysis.update({
+      status: 'error',
+    }, {
+      where: { id: analysisId },
+    });
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
+  }
+}
+
+// Função simples para calcular uma pontuação baseada nos resultados do Axe
+function calculateScore(results) {
+  const totalIssues = results.violations.length + results.incomplete.length;
+  const passedChecks = results.passes.length;
+  
+  // A pontuação é uma métrica simples, pode ser ajustada
+  if (totalIssues === 0) return 100;
+  
+  const score = Math.max(0, 100 - (totalIssues * 5)); // Exemplo de cálculo simples
+  return score;
+}
 
 // Controlador para iniciar uma nova análise
 exports.startAnalysis = async (req, res) => {
   try {
     const { url } = req.body;
 
-    // Validação básica da URL
     if (!url) {
       return res.status(400).json({ error: 'A URL é obrigatória.' });
     }
 
-    // Cria a análise inicial no banco de dados com status 'processing'
     const newAnalysis = await Analysis.create({ url });
 
-    // --- AQUI ENTRARÁ A LÓGICA DO PUPPETEER E AXE-CORE ---
-    //
-    // Em um cenário real, esta parte rodaria em segundo plano
-    // (com um sistema de filas) para não travar a requisição HTTP.
-    // Por enquanto, vamos simular o resultado.
-    //
-    // Lembre-se de instalar as dependências: npm install puppeteer @axe-core/puppeteer
-    // E de criar uma função para a análise real.
-    //
-    // Exemplo:
-    // analyzePage(url, newAnalysis.id);
-    //
-    // A lógica de simulação será adicionada no próximo passo para testarmos o fluxo completo.
+    // Inicia a análise em segundo plano para não travar a requisição
+    analyzePage(url, newAnalysis.id);
 
     return res.status(201).json({
       message: 'Análise iniciada com sucesso!',
@@ -42,7 +88,7 @@ exports.startAnalysis = async (req, res) => {
 exports.getAllAnalyses = async (req, res) => {
   try {
     const analyses = await Analysis.findAll({
-      order: [['createdAt', 'DESC']], // Ordena por data de criação (mais recente primeiro)
+      order: [['createdAt', 'DESC']],
     });
     return res.status(200).json(analyses);
   } catch (error) {
