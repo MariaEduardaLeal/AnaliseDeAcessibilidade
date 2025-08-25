@@ -2,54 +2,53 @@ document.addEventListener('DOMContentLoaded', () => {
     const reportContainer = document.getElementById('report-container');
     const loadingState = document.getElementById('loading-state');
     
-    const STORAGE_KEY = 'accessibilityAnalyses';
-    const mockReports = {
-        '1': {
-            url: 'https://www.exemplo.com.br',
-            score: 85,
-            results: {
-                errors: [
-                    { id: 'e1', type: 'error', title: 'Alt Text Ausente', description: 'Imagens sem texto alternativo.', element: '#logo img', recommendation: 'Adicione alt descritivo.' }
-                ],
-                warnings: [
-                    { id: 'w1', type: 'warning', title: 'Links sem Contexto', description: 'Links com texto como "clique aqui".', element: '.link', recommendation: 'Use texto descritivo.' }
-                ],
-                passed: [
-                    { id: 'p1', type: 'passed', title: 'Estrutura HTML Semântica', description: 'A página usa tags semânticas.', element: 'header, main', recommendation: 'Continue usando elementos semânticos.' }
-                ]
-            }
-        },
-        '4': {
-            url: 'https://www.empresa-tech.com',
-            score: 92,
-            results: {
-                errors: [],
-                warnings: [
-                    { id: 'w2', type: 'warning', title: 'Imagens sem Dimensões', description: 'Imagens não possuem width e height.', element: '.gallery img', recommendation: 'Especifique dimensões.' }
-                ],
-                passed: [
-                    { id: 'p2', type: 'passed', title: 'Excelente Contraste', description: 'Todos os textos têm contraste adequado.', element: 'body *', recommendation: 'Continue mantendo boas práticas.' }
-                ]
-            }
-        },
-        '5': {
-            url: 'https://www.portfolio-designer.com',
-            score: 78,
-            results: {
-                errors: [
-                    { id: 'e2', type: 'error', title: 'Falta de Skip Links', description: 'A página não tem links para pular para o conteúdo principal.', element: 'body', recommendation: 'Adicione um link "Pular para o conteúdo".' }
-                ],
-                warnings: [],
-                passed: [
-                    { id: 'p3', type: 'passed', title: 'Design Responsivo', description: 'O site adapta-se a telas diferentes.', element: 'body', recommendation: 'Continue testando em vários dispositivos.' }
-                ]
-            }
-        }
-    };
+    const API_URL = 'http://localhost:3000/api/analyses';
 
-    function getAnalysisIdFromUrl() {
-        const params = new URLSearchParams(window.location.search);
-        return params.get('id');
+    async function fetchReportData(analysisId) {
+        try {
+            const response = await fetch(`${API_URL}/${analysisId}`);
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error('Análise não encontrada.');
+                }
+                throw new Error('Erro ao carregar o relatório da API.');
+            }
+            const analysis = await response.json();
+
+            // Verifica se a análise foi concluída para renderizar o relatório
+            if (analysis.status === 'completed' && analysis.results) {
+                renderReport(analysis);
+            } else {
+                renderProcessingState();
+            }
+
+        } catch (error) {
+            console.error('Erro:', error);
+            renderErrorState(error.message);
+        }
+    }
+
+    function renderProcessingState() {
+        reportContainer.innerHTML = `
+            <div class="text-center py-12">
+                <div class="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-blue-500 mx-auto"></div>
+                <p class="mt-4 text-lg text-muted-foreground">Análise em andamento. Atualizando automaticamente...</p>
+            </div>
+        `;
+        loadingState.classList.add('hidden');
+        reportContainer.classList.remove('hidden');
+    }
+
+    function renderErrorState(message) {
+        reportContainer.innerHTML = `
+            <div class="text-center py-12 text-red-500">
+                <p class="text-lg font-bold">Erro</p>
+                <p class="mt-2 text-muted-foreground">${message}</p>
+                <a href="index.html" class="mt-4 inline-block text-blue-600 hover:underline">Voltar ao Dashboard</a>
+            </div>
+        `;
+        loadingState.classList.add('hidden');
+        reportContainer.classList.remove('hidden');
     }
 
     function renderScoreChart(score) {
@@ -82,9 +81,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderSummaryCards(issues) {
-        const errorCount = issues.errors.length;
-        const warningCount = issues.warnings.length;
-        const passedCount = issues.passed.length;
+        const errorCount = issues.violations?.length || 0;
+        const warningCount = issues.incomplete?.length || 0;
+        const passedCount = issues.passes?.length || 0;
 
         const cards = [
             { title: 'Erros Encontrados', value: errorCount, icon: '!', color: 'text-red-600', bgColor: 'bg-red-50', borderColor: 'border-red-200' },
@@ -106,25 +105,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderIssueList(issues, activeTab) {
-        let issuesToShow;
-        switch (activeTab) {
-            case 'errors':
-                issuesToShow = issues.errors;
-                break;
-            case 'warnings':
-                issuesToShow = issues.warnings;
-                break;
-            case 'passed':
-                issuesToShow = issues.passed;
-                break;
-            default:
-                issuesToShow = [...issues.errors, ...issues.warnings, ...issues.passed];
+        let issuesToShow = [];
+        let issuesObj = {
+            'errors': issues.violations,
+            'warnings': issues.incomplete,
+            'passed': issues.passes
+        };
+        
+        if (activeTab === 'all') {
+            Object.keys(issuesObj).forEach(key => {
+                issuesToShow = [...issuesToShow, ...issuesObj[key].map(issue => ({...issue, type: key}))];
+            });
+        } else {
+            issuesToShow = issuesObj[activeTab].map(issue => ({...issue, type: activeTab}));
         }
-
+        
         if (issuesToShow.length === 0) {
             return `<div class="text-center py-8 text-muted-foreground">Nenhum item encontrado nesta categoria.</div>`;
         }
-
+        
         return `
             <div class="space-y-4">
                 ${issuesToShow.map(issue => `
@@ -135,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                             <div class="flex-grow space-y-3">
                                 <div class="flex items-center gap-3 flex-wrap">
-                                    <h3 class="font-bold text-lg text-gray-900 dark:text-white">${issue.title}</h3>
+                                    <h3 class="font-bold text-lg text-gray-900 dark:text-white">${issue.help}</h3>
                                     ${getIssueBadge(issue.type)}
                                 </div>
                                 <p class="text-gray-700 leading-relaxed dark:text-gray-400">
@@ -144,22 +143,15 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div class="bg-gray-50 rounded p-3 border dark:bg-gray-700 dark:border-gray-600">
                                     <p class="text-sm text-gray-600 mb-1 font-medium dark:text-gray-400">Elemento Afetado:</p>
                                     <code class="text-sm bg-gray-100 px-2 py-1 rounded font-mono dark:bg-gray-600 dark:text-gray-200">
-                                        ${issue.element}
+                                        ${issue.nodes[0]?.html || 'Não especificado'}
                                     </code>
                                 </div>
                                 <div class="bg-blue-50 rounded p-3 border border-blue-200 dark:bg-blue-900 dark:border-blue-800">
                                     <p class="text-sm text-blue-800 mb-2 font-medium dark:text-blue-200">Recomendação:</p>
                                     <p class="text-sm text-blue-700 leading-relaxed dark:text-blue-300">
-                                        ${issue.recommendation}
+                                        ${issue.helpUrl ? `<a href="${issue.helpUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline">Ver Documentação WCAG</a>` : 'Não especificado'}
                                     </p>
                                 </div>
-                                ${issue.wcagLink ? `
-                                    <div>
-                                        <a href="${issue.wcagLink}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline dark:text-blue-400 dark:hover:text-blue-200">
-                                            Ver Documentação WCAG
-                                        </a>
-                                    </div>
-                                ` : ''}
                             </div>
                         </div>
                     </div>
@@ -170,9 +162,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getIssueIcon(type) {
         switch (type) {
-            case 'error':
+            case 'errors':
                 return `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>`;
-            case 'warning':
+            case 'warnings':
                 return `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-yellow-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L.92 20.21c-.51.88-.33 2.24.49 2.76.82.52 2.08.34 2.6-.48l9.37-16.35c.51-.88.33-2.24-.49-2.76-.82-.52-2.08-.34-2.6.48zm1.71 14.14v.01"/></svg>`;
             case 'passed':
                 return `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-8.66"/><path d="M22 4L12 14.01l-3-3"/></svg>`;
@@ -181,18 +173,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getIssueBadge(type) {
         switch (type) {
-            case 'error':
+            case 'errors':
                 return `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">Erro</span>`;
-            case 'warning':
+            case 'warnings':
                 return `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300">Aviso</span>`;
             case 'passed':
                 return `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">Aprovado</span>`;
         }
     }
-
+    
     function renderReport(analysis) {
-        const totalIssues = analysis.results.errors.length + analysis.results.warnings.length + analysis.results.passed.length;
-        
+        // Redefine as guias com base nos resultados do axe-core
+        const issues = analysis.results;
+        const totalIssues = (issues.violations?.length || 0) + (issues.incomplete?.length || 0) + (issues.passes?.length || 0);
+
         reportContainer.innerHTML = `
             <div class="bg-white rounded-lg border p-6 dark:bg-gray-800 dark:border-gray-700">
                 <div class="flex items-center justify-between mb-4">
@@ -202,39 +196,34 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
             </div>
-
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div class="bg-white rounded-lg border p-6 dark:bg-gray-800 dark:border-gray-700">
                     <h2 class="text-xl font-bold mb-6 text-center">Pontuação de Acessibilidade</h2>
                     ${renderScoreChart(analysis.score)}
                 </div>
-
                 <div class="space-y-6">
                     <h2 class="text-xl font-bold">Resumo das Verificações</h2>
-                    ${renderSummaryCards(analysis.results)}
+                    ${renderSummaryCards(issues)}
                 </div>
             </div>
-
             <div class="bg-white rounded-lg border p-6 dark:bg-gray-800 dark:border-gray-700">
                 <h2 class="text-xl font-bold mb-6">Relatório Detalhado</h2>
-                
                 <div class="flex space-x-1 mb-6 bg-gray-100 p-1 rounded-lg dark:bg-gray-700">
                     <button class="tab-trigger px-4 py-2 rounded-md font-medium transition-colors bg-white shadow-sm text-gray-900 dark:bg-gray-800 dark:text-white" data-tab="all">
                         Todos os Itens (${totalIssues})
                     </button>
                     <button class="tab-trigger px-4 py-2 rounded-md font-medium transition-colors text-red-600 hover:text-red-800" data-tab="errors">
-                        Erros (${analysis.results.errors.length})
+                        Erros (${issues.violations.length})
                     </button>
                     <button class="tab-trigger px-4 py-2 rounded-md font-medium transition-colors text-yellow-600 hover:text-yellow-800" data-tab="warnings">
-                        Avisos (${analysis.results.warnings.length})
+                        Avisos (${issues.incomplete.length})
                     </button>
                     <button class="tab-trigger px-4 py-2 rounded-md font-medium transition-colors text-green-600 hover:text-green-800" data-tab="passed">
-                        Aprovados (${analysis.results.passed.length})
+                        Aprovados (${issues.passes.length})
                     </button>
                 </div>
-
                 <div id="issue-list">
-                    ${renderIssueList(analysis.results, 'all')}
+                    ${renderIssueList(issues, 'all')}
                 </div>
             </div>
         `;
@@ -251,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (btn.dataset.tab === 'passed') btn.classList.remove('text-green-600');
                 });
                 button.classList.add('bg-white', 'shadow-sm', 'text-gray-900', 'dark:bg-gray-800', 'dark:text-white');
-                issueList.innerHTML = renderIssueList(analysis.results, button.dataset.tab);
+                issueList.innerHTML = renderIssueList(issues, button.dataset.tab);
             });
         });
         
@@ -259,23 +248,15 @@ document.addEventListener('DOMContentLoaded', () => {
         reportContainer.classList.remove('hidden');
     }
 
-    const analysisId = getAnalysisIdFromUrl();
-
-    if (!analysisId) {
-        reportContainer.innerHTML = `<div class="text-center py-12 text-muted-foreground">Relatório não encontrado. Por favor, retorne ao <a href="index.html" class="text-blue-600 hover:underline">dashboard</a>.</div>`;
-        loadingState.classList.add('hidden');
-        reportContainer.classList.remove('hidden');
-        return;
-    }
-
-    const analysesFromStorage = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    const analysis = analysesFromStorage.find(a => a.id === analysisId) || mockReports[analysisId];
-
-    if (analysis) {
-        renderReport(analysis);
+    const analysisId = new URLSearchParams(window.location.search).get('id');
+    
+    if (analysisId) {
+        fetchReportData(analysisId);
+        // Polling para análises em andamento
+        setInterval(() => {
+            fetchReportData(analysisId);
+        }, 5000);
     } else {
-        reportContainer.innerHTML = `<div class="text-center py-12 text-muted-foreground">Relatório não encontrado. Por favor, retorne ao <a href="index.html" class="text-blue-600 hover:underline">dashboard</a>.</div>`;
-        loadingState.classList.add('hidden');
-        reportContainer.classList.remove('hidden');
+        renderErrorState('ID da análise não fornecido.');
     }
 });
