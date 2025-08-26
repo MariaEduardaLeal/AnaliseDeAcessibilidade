@@ -7,21 +7,19 @@ async function analyzePage(url, analysisId) {
   let browser = null;
   try {
     browser = await puppeteer.launch({
-      headless: true, // Modo sem interface, mais rápido
+      headless: true,
     });
     const page = await browser.newPage();
-    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    
+    // Configura um timeout maior e espera por um estado de rede estável
+    await page.goto(url, { waitUntil: 'networkidle0', timeout: 60000 });
 
-    const axeBuilder = new AxePuppeteer(page, {
-        iframes: false // Não analisar iframes para simplificar
-    });
-
+    const axeBuilder = new AxePuppeteer(page);
+    
     const results = await axeBuilder.analyze();
 
-    // A lógica de pontuação e formatação dos resultados pode ser customizada
     const score = calculateScore(results);
 
-    // Atualiza o registro no banco de dados com os resultados
     await Analysis.update({
       status: 'completed',
       score: score,
@@ -34,7 +32,6 @@ async function analyzePage(url, analysisId) {
 
   } catch (error) {
     console.error(`Erro ao analisar a página ${url}:`, error);
-    // Em caso de erro, atualiza o status no banco de dados
     await Analysis.update({
       status: 'error',
     }, {
@@ -52,10 +49,9 @@ function calculateScore(results) {
   const totalIssues = results.violations.length + results.incomplete.length;
   const passedChecks = results.passes.length;
   
-  // A pontuação é uma métrica simples, pode ser ajustada
   if (totalIssues === 0) return 100;
   
-  const score = Math.max(0, 100 - (totalIssues * 5)); // Exemplo de cálculo simples
+  const score = Math.max(0, 100 - (totalIssues * 5));
   return score;
 }
 
@@ -70,7 +66,6 @@ exports.startAnalysis = async (req, res) => {
 
     const newAnalysis = await Analysis.create({ url });
 
-    // Inicia a análise em segundo plano para não travar a requisição
     analyzePage(url, newAnalysis.id);
 
     return res.status(201).json({
@@ -88,7 +83,7 @@ exports.startAnalysis = async (req, res) => {
 exports.getAllAnalyses = async (req, res) => {
   try {
     const analyses = await Analysis.findAll({
-      order: [['createdAt', 'DESC']],
+      // order: [['createdAt', 'DESC']],
     });
     return res.status(200).json(analyses);
   } catch (error) {

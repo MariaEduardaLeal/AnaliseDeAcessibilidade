@@ -1,8 +1,35 @@
 document.addEventListener('DOMContentLoaded', () => {
     const reportContainer = document.getElementById('report-container');
     const loadingState = document.getElementById('loading-state');
+    const translateButton = document.getElementById('translate-button');
     
     const API_URL = 'http://localhost:3000/api/analyses';
+    let pollingInterval;
+    let currentAnalysis;
+    let isTranslated = false;
+
+    // Objeto de tradução
+    const translations = {
+        'title-report': 'Relatório de Análise',
+        'score-title': 'Pontuação de Acessibilidade',
+        'summary-title': 'Resumo das Verificações',
+        'detailed-report-title': 'Relatório Detalhado',
+        'all-items': 'Todos os Itens',
+        'errors': 'Erros',
+        'warnings': 'Avisos',
+        'passed': 'Aprovados',
+        'element-affected': 'Elemento Afetado:',
+        'recommendation': 'Recomendação:',
+        'documentation-wcag': 'Ver Documentação WCAG',
+        'error-found': 'Erro',
+        'warning-found': 'Aviso',
+        'passed-found': 'Aprovado',
+        'no-items': 'Nenhum item encontrado nesta categoria.',
+        'loading-text': 'Análise em andamento. Atualizando automaticamente...',
+        'error-text': 'Erro',
+        'go-back': 'Voltar ao Dashboard',
+        'loading-report': 'Carregando relatório...',
+    };
 
     async function fetchReportData(analysisId) {
         try {
@@ -15,9 +42,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const analysis = await response.json();
 
-            // Verifica se a análise foi concluída para renderizar o relatório
             if (analysis.status === 'completed' && analysis.results) {
-                renderReport(analysis);
+                currentAnalysis = analysis;
+                renderReport(currentAnalysis);
+                if (pollingInterval) clearInterval(pollingInterval);
+            } else if (analysis.status === 'error') {
+                renderErrorState('A análise falhou. Tente novamente mais tarde.');
+                if (pollingInterval) clearInterval(pollingInterval);
             } else {
                 renderProcessingState();
             }
@@ -25,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Erro:', error);
             renderErrorState(error.message);
+            if (pollingInterval) clearInterval(pollingInterval);
         }
     }
 
@@ -32,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
         reportContainer.innerHTML = `
             <div class="text-center py-12">
                 <div class="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-blue-500 mx-auto"></div>
-                <p class="mt-4 text-lg text-muted-foreground">Análise em andamento. Atualizando automaticamente...</p>
+                <p class="mt-4 text-lg text-muted-foreground">${translations['loading-text']}</p>
             </div>
         `;
         loadingState.classList.add('hidden');
@@ -42,9 +74,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderErrorState(message) {
         reportContainer.innerHTML = `
             <div class="text-center py-12 text-red-500">
-                <p class="text-lg font-bold">Erro</p>
+                <p class="text-lg font-bold">${translations['error-text']}</p>
                 <p class="mt-2 text-muted-foreground">${message}</p>
-                <a href="index.html" class="mt-4 inline-block text-blue-600 hover:underline">Voltar ao Dashboard</a>
+                <a href="index.html" class="mt-4 inline-block text-blue-600 hover:underline">${translations['go-back']}</a>
             </div>
         `;
         loadingState.classList.add('hidden');
@@ -86,9 +118,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const passedCount = issues.passes?.length || 0;
 
         const cards = [
-            { title: 'Erros Encontrados', value: errorCount, icon: '!', color: 'text-red-600', bgColor: 'bg-red-50', borderColor: 'border-red-200' },
-            { title: 'Avisos Encontrados', value: warningCount, icon: '?', color: 'text-yellow-600', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200' },
-            { title: 'Verificações Aprovadas', value: passedCount, icon: '✓', color: 'text-green-600', bgColor: 'bg-green-50', borderColor: 'border-green-200' }
+            { title: isTranslated ? translations['errors'] : 'Errors Found', value: errorCount, icon: '!', color: 'text-red-600', bgColor: 'bg-red-50', borderColor: 'border-red-200' },
+            { title: isTranslated ? translations['warnings'] : 'Warnings Found', value: warningCount, icon: '?', color: 'text-yellow-600', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200' },
+            { title: isTranslated ? translations['passed'] : 'Passed Checks', value: passedCount, icon: '✓', color: 'text-green-600', bgColor: 'bg-green-50', borderColor: 'border-green-200' }
         ];
 
         return `
@@ -121,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         if (issuesToShow.length === 0) {
-            return `<div class="text-center py-8 text-muted-foreground">Nenhum item encontrado nesta categoria.</div>`;
+            return `<div class="text-center py-8 text-muted-foreground">${translations['no-items']}</div>`;
         }
         
         return `
@@ -141,15 +173,15 @@ document.addEventListener('DOMContentLoaded', () => {
                                     ${issue.description}
                                 </p>
                                 <div class="bg-gray-50 rounded p-3 border dark:bg-gray-700 dark:border-gray-600">
-                                    <p class="text-sm text-gray-600 mb-1 font-medium dark:text-gray-400">Elemento Afetado:</p>
+                                    <p class="text-sm text-gray-600 mb-1 font-medium dark:text-gray-400">${translations['element-affected']}</p>
                                     <code class="text-sm bg-gray-100 px-2 py-1 rounded font-mono dark:bg-gray-600 dark:text-gray-200">
                                         ${issue.nodes[0]?.html || 'Não especificado'}
                                     </code>
                                 </div>
                                 <div class="bg-blue-50 rounded p-3 border border-blue-200 dark:bg-blue-900 dark:border-blue-800">
-                                    <p class="text-sm text-blue-800 mb-2 font-medium dark:text-blue-200">Recomendação:</p>
+                                    <p class="text-sm text-blue-800 mb-2 font-medium dark:text-blue-200">${translations['recommendation']}</p>
                                     <p class="text-sm text-blue-700 leading-relaxed dark:text-blue-300">
-                                        ${issue.helpUrl ? `<a href="${issue.helpUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline">Ver Documentação WCAG</a>` : 'Não especificado'}
+                                        ${issue.helpUrl ? `<a href="${issue.helpUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline">${translations['documentation-wcag']}</a>` : 'Não especificado'}
                                     </p>
                                 </div>
                             </div>
@@ -172,18 +204,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getIssueBadge(type) {
+        let text;
         switch (type) {
             case 'errors':
-                return `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">Erro</span>`;
+                text = translations['error-found'];
+                return `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">${text}</span>`;
             case 'warnings':
-                return `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300">Aviso</span>`;
+                text = translations['warning-found'];
+                return `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300">${text}</span>`;
             case 'passed':
-                return `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">Aprovado</span>`;
+                text = translations['passed-found'];
+                return `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">${text}</span>`;
         }
     }
-    
+
     function renderReport(analysis) {
-        // Redefine as guias com base nos resultados do axe-core
         const issues = analysis.results;
         const totalIssues = (issues.violations?.length || 0) + (issues.incomplete?.length || 0) + (issues.passes?.length || 0);
 
@@ -191,35 +226,35 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="bg-white rounded-lg border p-6 dark:bg-gray-800 dark:border-gray-700">
                 <div class="flex items-center justify-between mb-4">
                     <div>
-                        <h1 class="text-2xl font-bold mb-2">Relatório de Análise</h1>
+                        <h1 class="text-2xl font-bold mb-2">${isTranslated ? translations['title-report'] : 'Analysis Report'}</h1>
                         <p class="text-muted-foreground">${analysis.url}</p>
                     </div>
                 </div>
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div class="bg-white rounded-lg border p-6 dark:bg-gray-800 dark:border-gray-700">
-                    <h2 class="text-xl font-bold mb-6 text-center">Pontuação de Acessibilidade</h2>
+                    <h2 class="text-xl font-bold mb-6 text-center">${isTranslated ? translations['score-title'] : 'Accessibility Score'}</h2>
                     ${renderScoreChart(analysis.score)}
                 </div>
                 <div class="space-y-6">
-                    <h2 class="text-xl font-bold">Resumo das Verificações</h2>
+                    <h2 class="text-xl font-bold">${isTranslated ? translations['summary-title'] : 'Summary of Checks'}</h2>
                     ${renderSummaryCards(issues)}
                 </div>
             </div>
             <div class="bg-white rounded-lg border p-6 dark:bg-gray-800 dark:border-gray-700">
-                <h2 class="text-xl font-bold mb-6">Relatório Detalhado</h2>
+                <h2 class="text-xl font-bold mb-6">${isTranslated ? translations['detailed-report-title'] : 'Detailed Report'}</h2>
                 <div class="flex space-x-1 mb-6 bg-gray-100 p-1 rounded-lg dark:bg-gray-700">
                     <button class="tab-trigger px-4 py-2 rounded-md font-medium transition-colors bg-white shadow-sm text-gray-900 dark:bg-gray-800 dark:text-white" data-tab="all">
-                        Todos os Itens (${totalIssues})
+                        ${isTranslated ? translations['all-items'] : 'All Items'} (${totalIssues})
                     </button>
                     <button class="tab-trigger px-4 py-2 rounded-md font-medium transition-colors text-red-600 hover:text-red-800" data-tab="errors">
-                        Erros (${issues.violations.length})
+                        ${isTranslated ? translations['errors'] : 'Errors'} (${issues.violations.length})
                     </button>
                     <button class="tab-trigger px-4 py-2 rounded-md font-medium transition-colors text-yellow-600 hover:text-yellow-800" data-tab="warnings">
-                        Avisos (${issues.incomplete.length})
+                        ${isTranslated ? translations['warnings'] : 'Warnings'} (${issues.incomplete.length})
                     </button>
                     <button class="tab-trigger px-4 py-2 rounded-md font-medium transition-colors text-green-600 hover:text-green-800" data-tab="passed">
-                        Aprovados (${issues.passes.length})
+                        ${isTranslated ? translations['passed'] : 'Passed'} (${issues.passes.length})
                     </button>
                 </div>
                 <div id="issue-list">
@@ -252,11 +287,21 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (analysisId) {
         fetchReportData(analysisId);
-        // Polling para análises em andamento
-        setInterval(() => {
+        pollingInterval = setInterval(() => {
             fetchReportData(analysisId);
         }, 5000);
     } else {
         renderErrorState('ID da análise não fornecido.');
+    }
+
+    // Adiciona o evento de clique para o botão de tradução
+    if (translateButton) {
+        translateButton.addEventListener('click', () => {
+            isTranslated = !isTranslated;
+            translateButton.textContent = isTranslated ? 'Translate to English' : 'Traduzir para Português';
+            if (currentAnalysis) {
+                renderReport(currentAnalysis);
+            }
+        });
     }
 });
