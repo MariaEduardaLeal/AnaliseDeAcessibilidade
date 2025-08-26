@@ -6,48 +6,67 @@ document.addEventListener('DOMContentLoaded', () => {
     const API_URL = 'http://localhost:3000/api/analyses';
     let pollingInterval;
     let currentAnalysis;
-    let isTranslated = false;
+    let currentLanguage = 'pt'; // Define o idioma padrão como português
 
-    // Objeto de tradução
-    const translations = {
-        'title-report': 'Relatório de Análise',
-        'score-title': 'Pontuação de Acessibilidade',
-        'summary-title': 'Resumo das Verificações',
-        'detailed-report-title': 'Relatório Detalhado',
-        'all-items': 'Todos os Itens',
-        'errors': 'Erros',
-        'warnings': 'Avisos',
-        'passed': 'Aprovados',
-        'element-affected': 'Elemento Afetado:',
-        'recommendation': 'Recomendação:',
-        'documentation-wcag': 'Ver Documentação WCAG',
-        'error-found': 'Erro',
-        'warning-found': 'Aviso',
-        'passed-found': 'Aprovado',
-        'no-items': 'Nenhum item encontrado nesta categoria.',
-        'loading-text': 'Análise em andamento. Atualizando automaticamente...',
-        'error-text': 'Erro',
-        'go-back': 'Voltar ao Dashboard',
-        'loading-report': 'Carregando relatório...',
-    };
+    // 1. Inicializa o i18next
+    i18next
+        .use(i18nextHttpBackend)
+        .init({
+            lng: currentLanguage, // Define a língua inicial
+            fallbackLng: 'en', // Língua de fallback caso a tradução não seja encontrada
+            backend: {
+                loadPath: 'locales/{{lng}}/translation.json' // Caminho para os arquivos de tradução
+            },
+            debug: true // Apenas para debug, pode ser removido
+        }, (err, t) => {
+            // Callback após a inicialização. Traduzimos os elementos estáticos aqui.
+            updateStaticText();
+            const analysisId = new URLSearchParams(window.location.search).get('id');
+            if (analysisId) {
+                fetchReportData(analysisId);
+                pollingInterval = setInterval(() => {
+                    fetchReportData(analysisId);
+                }, 5000);
+            } else {
+                renderErrorState(t('no_analysis_id'));
+            }
+        });
+
+    // Função para traduzir o texto estático
+    function updateStaticText() {
+        if (translateButton) {
+            translateButton.textContent = i18next.t('translate_button');
+        }
+    }
+
+    // Função para alternar o idioma
+    function changeLanguage() {
+        currentLanguage = currentLanguage === 'en' ? 'pt' : 'en';
+        i18next.changeLanguage(currentLanguage, (err, t) => {
+            if (currentAnalysis) {
+                renderReport(currentAnalysis);
+            }
+            updateStaticText();
+        });
+    }
 
     async function fetchReportData(analysisId) {
         try {
             const response = await fetch(`${API_URL}/${analysisId}`);
             if (!response.ok) {
                 if (response.status === 404) {
-                    throw new Error('Análise não encontrada.');
+                    throw new Error(i18next.t('analysis_not_found'));
                 }
-                throw new Error('Erro ao carregar o relatório da API.');
+                throw new Error(i18next.t('report_load_error'));
             }
             const analysis = await response.json();
-
+            
             if (analysis.status === 'completed' && analysis.results) {
                 currentAnalysis = analysis;
                 renderReport(currentAnalysis);
                 if (pollingInterval) clearInterval(pollingInterval);
             } else if (analysis.status === 'error') {
-                renderErrorState('A análise falhou. Tente novamente mais tarde.');
+                renderErrorState(i18next.t('analysis_failed'));
                 if (pollingInterval) clearInterval(pollingInterval);
             } else {
                 renderProcessingState();
@@ -64,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
         reportContainer.innerHTML = `
             <div class="text-center py-12">
                 <div class="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-blue-500 mx-auto"></div>
-                <p class="mt-4 text-lg text-muted-foreground">${translations['loading-text']}</p>
+                <p class="mt-4 text-lg text-muted-foreground">${i18next.t('loading_text')}</p>
             </div>
         `;
         loadingState.classList.add('hidden');
@@ -74,15 +93,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderErrorState(message) {
         reportContainer.innerHTML = `
             <div class="text-center py-12 text-red-500">
-                <p class="text-lg font-bold">${translations['error-text']}</p>
+                <p class="text-lg font-bold">${i18next.t('error_text')}</p>
                 <p class="mt-2 text-muted-foreground">${message}</p>
-                <a href="index.html" class="mt-4 inline-block text-blue-600 hover:underline">${translations['go-back']}</a>
+                <a href="index.html" class="mt-4 inline-block text-blue-600 hover:underline">${i18next.t('go_back')}</a>
             </div>
         `;
         loadingState.classList.add('hidden');
         reportContainer.classList.remove('hidden');
     }
-
+    
+    // As funções renderScoreChart e renderSummaryCards podem permanecer as mesmas,
+    // já que as strings que elas usam já foram substituídas nos arquivos de tradução.
     function renderScoreChart(score) {
         const color = score >= 80 ? 'green-500' : score >= 60 ? 'yellow-500' : 'red-500';
         const strokeColor = score >= 80 ? '#22c55e' : score >= 60 ? '#eab308' : '#ef4444';
@@ -118,9 +139,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const passedCount = issues.passes?.length || 0;
 
         const cards = [
-            { title: isTranslated ? translations['errors'] : 'Errors Found', value: errorCount, icon: '!', color: 'text-red-600', bgColor: 'bg-red-50', borderColor: 'border-red-200' },
-            { title: isTranslated ? translations['warnings'] : 'Warnings Found', value: warningCount, icon: '?', color: 'text-yellow-600', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200' },
-            { title: isTranslated ? translations['passed'] : 'Passed Checks', value: passedCount, icon: '✓', color: 'text-green-600', bgColor: 'bg-green-50', borderColor: 'border-green-200' }
+            { title: i18next.t('errors'), value: errorCount, icon: '!', color: 'text-red-600', bgColor: 'bg-red-50', borderColor: 'border-red-200' },
+            { title: i18next.t('warnings'), value: warningCount, icon: '?', color: 'text-yellow-600', bgColor: 'bg-yellow-50', borderColor: 'border-yellow-200' },
+            { title: i18next.t('passed'), value: passedCount, icon: '✓', color: 'text-green-600', bgColor: 'bg-green-50', borderColor: 'border-green-200' }
         ];
 
         return `
@@ -136,6 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
+    // Modificamos a função renderIssueList para usar i18next
     function renderIssueList(issues, activeTab) {
         let issuesToShow = [];
         let issuesObj = {
@@ -153,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         if (issuesToShow.length === 0) {
-            return `<div class="text-center py-8 text-muted-foreground">${translations['no-items']}</div>`;
+            return `<div class="text-center py-8 text-muted-foreground">${i18next.t('no_items')}</div>`;
         }
         
         return `
@@ -166,22 +188,22 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                             <div class="flex-grow space-y-3">
                                 <div class="flex items-center gap-3 flex-wrap">
-                                    <h3 class="font-bold text-lg text-gray-900 dark:text-white">${issue.help}</h3>
+                                    <h3 class="font-bold text-lg text-gray-900 dark:text-white">${i18next.t(`issue_violations.${issue.id}.help`)}</h3>
                                     ${getIssueBadge(issue.type)}
                                 </div>
                                 <p class="text-gray-700 leading-relaxed dark:text-gray-400">
-                                    ${issue.description}
+                                    ${i18next.t(`issue_violations.${issue.id}.description`)}
                                 </p>
                                 <div class="bg-gray-50 rounded p-3 border dark:bg-gray-700 dark:border-gray-600">
-                                    <p class="text-sm text-gray-600 mb-1 font-medium dark:text-gray-400">${translations['element-affected']}</p>
+                                    <p class="text-sm text-gray-600 mb-1 font-medium dark:text-gray-400">${i18next.t('element_affected')}</p>
                                     <code class="text-sm bg-gray-100 px-2 py-1 rounded font-mono dark:bg-gray-600 dark:text-gray-200">
                                         ${issue.nodes[0]?.html || 'Não especificado'}
                                     </code>
                                 </div>
                                 <div class="bg-blue-50 rounded p-3 border border-blue-200 dark:bg-blue-900 dark:border-blue-800">
-                                    <p class="text-sm text-blue-800 mb-2 font-medium dark:text-blue-200">${translations['recommendation']}</p>
+                                    <p class="text-sm text-blue-800 mb-2 font-medium dark:text-blue-200">${i18next.t('recommendation')}</p>
                                     <p class="text-sm text-blue-700 leading-relaxed dark:text-blue-300">
-                                        ${issue.helpUrl ? `<a href="${issue.helpUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline">${translations['documentation-wcag']}</a>` : 'Não especificado'}
+                                        ${issue.helpUrl ? `<a href="${issue.helpUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline">${i18next.t('documentation_wcag')}</a>` : 'Não especificado'}
                                     </p>
                                 </div>
                             </div>
@@ -207,17 +229,18 @@ document.addEventListener('DOMContentLoaded', () => {
         let text;
         switch (type) {
             case 'errors':
-                text = translations['error-found'];
+                text = i18next.t('error_found');
                 return `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">${text}</span>`;
             case 'warnings':
-                text = translations['warning-found'];
+                text = i18next.t('warning_found');
                 return `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300">${text}</span>`;
             case 'passed':
-                text = translations['passed-found'];
+                text = i18next.t('passed_found');
                 return `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">${text}</span>`;
         }
     }
 
+    // Modificamos a função renderReport para usar i18next
     function renderReport(analysis) {
         const issues = analysis.results;
         const totalIssues = (issues.violations?.length || 0) + (issues.incomplete?.length || 0) + (issues.passes?.length || 0);
@@ -226,35 +249,35 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="bg-white rounded-lg border p-6 dark:bg-gray-800 dark:border-gray-700">
                 <div class="flex items-center justify-between mb-4">
                     <div>
-                        <h1 class="text-2xl font-bold mb-2">${isTranslated ? translations['title-report'] : 'Analysis Report'}</h1>
+                        <h1 class="text-2xl font-bold mb-2">${i18next.t('report_title')}</h1>
                         <p class="text-muted-foreground">${analysis.url}</p>
                     </div>
                 </div>
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div class="bg-white rounded-lg border p-6 dark:bg-gray-800 dark:border-gray-700">
-                    <h2 class="text-xl font-bold mb-6 text-center">${isTranslated ? translations['score-title'] : 'Accessibility Score'}</h2>
+                    <h2 class="text-xl font-bold mb-6 text-center">${i18next.t('score_title')}</h2>
                     ${renderScoreChart(analysis.score)}
                 </div>
                 <div class="space-y-6">
-                    <h2 class="text-xl font-bold">${isTranslated ? translations['summary-title'] : 'Summary of Checks'}</h2>
+                    <h2 class="text-xl font-bold">${i18next.t('summary_title')}</h2>
                     ${renderSummaryCards(issues)}
                 </div>
             </div>
             <div class="bg-white rounded-lg border p-6 dark:bg-gray-800 dark:border-gray-700">
-                <h2 class="text-xl font-bold mb-6">${isTranslated ? translations['detailed-report-title'] : 'Detailed Report'}</h2>
+                <h2 class="text-xl font-bold mb-6">${i18next.t('detailed_report_title')}</h2>
                 <div class="flex space-x-1 mb-6 bg-gray-100 p-1 rounded-lg dark:bg-gray-700">
                     <button class="tab-trigger px-4 py-2 rounded-md font-medium transition-colors bg-white shadow-sm text-gray-900 dark:bg-gray-800 dark:text-white" data-tab="all">
-                        ${isTranslated ? translations['all-items'] : 'All Items'} (${totalIssues})
+                        ${i18next.t('all_items')} (${totalIssues})
                     </button>
                     <button class="tab-trigger px-4 py-2 rounded-md font-medium transition-colors text-red-600 hover:text-red-800" data-tab="errors">
-                        ${isTranslated ? translations['errors'] : 'Errors'} (${issues.violations.length})
+                        ${i18next.t('errors')} (${issues.violations.length})
                     </button>
                     <button class="tab-trigger px-4 py-2 rounded-md font-medium transition-colors text-yellow-600 hover:text-yellow-800" data-tab="warnings">
-                        ${isTranslated ? translations['warnings'] : 'Warnings'} (${issues.incomplete.length})
+                        ${i18next.t('warnings')} (${issues.incomplete.length})
                     </button>
                     <button class="tab-trigger px-4 py-2 rounded-md font-medium transition-colors text-green-600 hover:text-green-800" data-tab="passed">
-                        ${isTranslated ? translations['passed'] : 'Passed'} (${issues.passes.length})
+                        ${i18next.t('passed')} (${issues.passes.length})
                     </button>
                 </div>
                 <div id="issue-list">
@@ -285,23 +308,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const analysisId = new URLSearchParams(window.location.search).get('id');
     
-    if (analysisId) {
-        fetchReportData(analysisId);
-        pollingInterval = setInterval(() => {
-            fetchReportData(analysisId);
-        }, 5000);
-    } else {
-        renderErrorState('ID da análise não fornecido.');
-    }
 
-    // Adiciona o evento de clique para o botão de tradução
+
     if (translateButton) {
-        translateButton.addEventListener('click', () => {
-            isTranslated = !isTranslated;
-            translateButton.textContent = isTranslated ? 'Translate to English' : 'Traduzir para Português';
-            if (currentAnalysis) {
-                renderReport(currentAnalysis);
-            }
-        });
+        translateButton.addEventListener('click', changeLanguage);
     }
 });
