@@ -1,0 +1,35 @@
+{
+    "report_title": "Relatório de Análise",
+    "score_title": "Pontuação de Acessibilidade",
+    "summary_title": "Resumo das Verificações",
+    "detailed_report_title": "Relatório Detalhado",
+    "all_items": "Todos os Itens",
+    "errors": "Erros",
+    "warnings": "Avisos",
+    "passed": "Aprovados",
+    "element_affected": "Elemento Afetado:",
+    "recommendation": "Recomendação:",
+    "documentation_wcag": "Ver Documentação WCAG",
+    "error_found": "Erro",
+    "warning_found": "Aviso",
+    "passed_found": "Aprovado",
+    "no_items": "Nenhum item encontrado nesta categoria.",
+    "loading_text": "Análise em andamento. Atualizando automaticamente...",
+    "error_text": "Erro",
+    "go_back": "Voltar ao Dashboard",
+    "loading_report": "Carregando relatório...",
+    "issue_violations": {
+        "landmark-one-main": {
+            "help": "A página deve conter um ponto de referência principal",
+            "description": "Garante que o documento tenha um ponto de referência principal"
+        },
+        "region": {
+            "help": "Todo o conteúdo da página deve estar contido em pontos de referência",
+            "description": "Garante que todo o conteúdo esteja contido em pontos de referência"
+        },
+        "landmark-unique": {
+            "help": "Pontos de referência devem ter uma combinação de função ou função/rótulo/título única",
+            "description": "Garante que os pontos de referência sejam únicos"
+        }
+    }
+}

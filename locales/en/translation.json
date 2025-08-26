@@ -1,0 +1,35 @@
+{
+    "report_title": "Analysis Report",
+    "score_title": "Accessibility Score",
+    "summary_title": "Summary of Checks",
+    "detailed_report_title": "Detailed Report",
+    "all_items": "All Items",
+    "errors": "Errors",
+    "warnings": "Warnings",
+    "passed": "Passed",
+    "element_affected": "Affected Element:",
+    "recommendation": "Recommendation:",
+    "documentation_wcag": "View WCAG Documentation",
+    "error_found": "Error",
+    "warning_found": "Warning",
+    "passed_found": "Passed",
+    "no_items": "No items found in this category.",
+    "loading_text": "Analysis in progress. Automatically updating...",
+    "error_text": "Error",
+    "go_back": "Go back to Dashboard",
+    "loading_report": "Loading report...",
+    "issue_violations": {
+        "landmark-one-main": {
+            "help": "Page should contain a main landmark",
+            "description": "Ensures the document has a main landmark"
+        },
+        "region": {
+            "help": "All page content should be contained in landmarks",
+            "description": "Ensures all content is contained within landmarks"
+        },
+        "landmark-unique": {
+            "help": "Landmarks should have a unique role or role/label/title (i.e. accessible name) combination",
+            "description": "Ensures landmarks are unique"
+        }
+    }
+}
