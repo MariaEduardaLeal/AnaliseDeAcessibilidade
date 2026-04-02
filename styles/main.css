@@ -1,0 +1,390 @@
+.page-grid,
+.report-layout {
+    padding-top: 36px;
+}
+
+.page-grid {
+    display: grid;
+    gap: 28px;
+}
+
+.hero-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.9fr);
+    gap: 24px;
+    padding: 32px;
+    border-radius: var(--radius-lg);
+}
+
+.hero-copy {
+    align-self: center;
+}
+
+.hero-copy h2 {
+    margin: 0;
+    font-size: clamp(2rem, 3vw, 3.4rem);
+    line-height: 1;
+    font-family: Georgia, "Times New Roman", serif;
+}
+
+.hero-text {
+    margin: 18px 0 0;
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--muted);
+    max-width: 62ch;
+}
+
+.hero-highlights {
+    display: grid;
+    gap: 12px;
+    margin: 24px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.hero-highlights li {
+    position: relative;
+    padding-left: 22px;
+    color: var(--text);
+}
+
+.hero-highlights li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 9px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+}
+
+.analysis-card,
+.content-panel,
+.report-card,
+.severity-column,
+.issue-card,
+.analysis-list-card,
+.state-panel {
+    border-radius: var(--radius-lg);
+    padding: 28px;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 16px;
+}
+
+.summary-card {
+    border-radius: 24px;
+    padding: 22px;
+}
+
+.summary-card h3 {
+    margin: 0 0 10px;
+    font-size: 0.92rem;
+    color: var(--muted);
+}
+
+.summary-card strong {
+    display: block;
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.summary-card p {
+    margin: 10px 0 0;
+    color: var(--muted);
+}
+
+.analysis-list {
+    display: grid;
+    gap: 14px;
+}
+
+.analysis-list-card {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(120px, 0.7fr) minmax(180px, 0.8fr) auto;
+    gap: 16px;
+    align-items: center;
+}
+
+.analysis-list-card h3,
+.report-headline h2,
+.severity-column h3,
+.issue-card h4 {
+    margin: 0;
+}
+
+.analysis-list-card p,
+.analysis-meta,
+.report-subtitle,
+.muted-copy,
+.issue-card p {
+    margin: 0;
+    color: var(--muted);
+}
+
+.analysis-url {
+    font-weight: 700;
+    word-break: break-word;
+}
+
+.analysis-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.ghost-button {
+    border: 0;
+    background: transparent;
+    color: var(--danger);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.dashboard-empty {
+    padding: 42px 24px;
+    text-align: center;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.56);
+    border: 1px dashed rgba(15, 118, 110, 0.25);
+    color: var(--muted);
+}
+
+.state-panel {
+    text-align: center;
+}
+
+.state-panel p {
+    margin: 0;
+    color: var(--muted);
+}
+
+.report-layout {
+    display: grid;
+    gap: 24px;
+}
+
+.report-overview {
+    display: grid;
+    gap: 24px;
+}
+
+.report-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.8fr);
+    gap: 24px;
+}
+
+.report-headline {
+    display: grid;
+    gap: 16px;
+}
+
+.report-subtitle {
+    font-size: 1rem;
+}
+
+.score-panel {
+    display: grid;
+    gap: 16px;
+    align-content: start;
+}
+
+.score-ring {
+    --score-color: #15803d;
+    position: relative;
+    width: 210px;
+    height: 210px;
+    margin: 0 auto;
+}
+
+.score-ring svg {
+    transform: rotate(-90deg);
+}
+
+.score-ring-center {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    text-align: center;
+}
+
+.score-ring-value {
+    font-size: 3rem;
+    line-height: 1;
+}
+
+.score-ring-scale {
+    color: var(--muted);
+}
+
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.kpi-card {
+    border-radius: 22px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.62);
+    border: 1px solid var(--border);
+}
+
+.kpi-card strong {
+    display: block;
+    font-size: 1.8rem;
+}
+
+.severity-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.severity-column {
+    display: grid;
+    gap: 18px;
+    align-content: start;
+}
+
+.severity-column-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.issue-card {
+    display: grid;
+    gap: 16px;
+    background: rgba(255, 255, 255, 0.92);
+}
+
+.issue-card-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.issue-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.issue-detail {
+    display: grid;
+    gap: 6px;
+}
+
+.issue-detail strong {
+    font-size: 0.93rem;
+}
+
+.code-block {
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--surface-muted);
+    border: 1px solid rgba(109, 76, 41, 0.1);
+}
+
+.empty-column {
+    padding: 18px;
+    border-radius: 18px;
+    background: rgba(22, 101, 52, 0.08);
+    color: var(--muted);
+}
+
+.inline-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.priority-list,
+.category-grid {
+    display: grid;
+    gap: 16px;
+}
+
+.priority-list {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.priority-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 16px;
+    align-items: center;
+    padding: 18px 20px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid var(--border);
+}
+
+.priority-item h3 {
+    margin: 0;
+}
+
+.priority-order {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    background: rgba(15, 118, 110, 0.12);
+    color: var(--primary);
+    font-weight: 800;
+}
+
+.category-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+@media (max-width: 1024px) {
+    .hero-panel,
+    .report-hero,
+    .severity-grid,
+    .analysis-list-card {
+        grid-template-columns: 1fr;
+    }
+
+    .analysis-actions {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 640px) {
+    .hero-panel,
+    .analysis-card,
+    .content-panel,
+    .report-card,
+    .severity-column,
+    .issue-card,
+    .analysis-list-card,
+    .state-panel {
+        padding: 22px;
+    }
+
+    .summary-grid,
+    .kpi-grid,
+    .category-grid,
+    .priority-list {
+        grid-template-columns: 1fr;
+    }
+
+    .score-ring {
+        width: 180px;
+        height: 180px;
+    }
+}

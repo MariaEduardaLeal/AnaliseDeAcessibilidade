@@ -1,128 +1,69 @@
-const puppeteer = require('puppeteer');
-const { AxePuppeteer } = require('@axe-core/puppeteer');
-const Analysis = require('../models/Analysis');
+const analysisService = require('../services/analysisService');
 
-// Função de análise que será executada em segundo plano
-async function analyzePage(url, analysisId) {
-  let browser = null;
-  try {
-    browser = await puppeteer.launch({
-      headless: true,
-    });
-    const page = await browser.newPage();
-    
-    // Configura um timeout maior e espera por um estado de rede estável
-    await page.goto(url, { waitUntil: 'networkidle0', timeout: 60000 });
-
-    const axeBuilder = new AxePuppeteer(page);
-    
-    const results = await axeBuilder.analyze();
-
-    const score = calculateScore(results);
-
-    await Analysis.update({
-      status: 'completed',
-      score: score,
-      results: results,
-    }, {
-      where: { id: analysisId },
-    });
-    
-    console.log(`Análise concluída para a URL: ${url}`);
-
-  } catch (error) {
-    console.error(`Erro ao analisar a página ${url}:`, error);
-    await Analysis.update({
-      status: 'error',
-    }, {
-      where: { id: analysisId },
-    });
-  } finally {
-    if (browser) {
-      await browser.close();
-    }
-  }
-}
-
-// Função simples para calcular uma pontuação baseada nos resultados do Axe
-function calculateScore(results) {
-  const totalIssues = results.violations.length + results.incomplete.length;
-  const passedChecks = results.passes.length;
-  
-  if (totalIssues === 0) return 100;
-  
-  const score = Math.max(0, 100 - (totalIssues * 5));
-  return score;
-}
-
-// Controlador para iniciar uma nova análise
 exports.startAnalysis = async (req, res) => {
   try {
     const { url } = req.body;
-
-    if (!url) {
-      return res.status(400).json({ error: 'A URL é obrigatória.' });
-    }
-
-    const newAnalysis = await Analysis.create({ url });
-
-    analyzePage(url, newAnalysis.id);
+    const analysis = await analysisService.createAnalysis(url);
 
     return res.status(201).json({
-      message: 'Análise iniciada com sucesso!',
-      analysis: newAnalysis,
+      message: 'Analise iniciada com sucesso.',
+      analysis,
     });
-
   } catch (error) {
-    console.error('Erro ao iniciar a análise:', error);
-    return res.status(500).json({ error: 'Erro interno do servidor.' });
+    const statusCode = error.statusCode || 500;
+    const message = statusCode === 500 ? 'Erro interno do servidor.' : error.message;
+    if (statusCode === 500) {
+      console.error('Erro ao iniciar a analise:', error);
+    }
+    return res.status(statusCode).json({ error: message });
   }
 };
 
-// Controlador para buscar todas as análises
-exports.getAllAnalyses = async (req, res) => {
+exports.getAllAnalyses = async (_req, res) => {
   try {
-    const analyses = await Analysis.findAll({
-      // order: [['createdAt', 'DESC']],
-    });
+    const analyses = await analysisService.listAnalyses();
     return res.status(200).json(analyses);
   } catch (error) {
-    console.error('Erro ao buscar análises:', error);
+    console.error('Erro ao buscar analises:', error);
     return res.status(500).json({ error: 'Erro interno do servidor.' });
   }
 };
 
-// Controlador para buscar uma análise por ID
 exports.getAnalysisById = async (req, res) => {
   try {
-    const { id } = req.params;
-    const analysis = await Analysis.findByPk(id);
+    const analysis = await analysisService.getAnalysisById(req.params.id);
 
     if (!analysis) {
-      return res.status(404).json({ error: 'Análise não encontrada.' });
+      return res.status(404).json({ error: 'Analise nao encontrada.' });
     }
 
     return res.status(200).json(analysis);
   } catch (error) {
-    console.error('Erro ao buscar análise:', error);
+    console.error('Erro ao buscar analise:', error);
     return res.status(500).json({ error: 'Erro interno do servidor.' });
   }
 };
 
-// Controlador para deletar uma análise por ID
 exports.deleteAnalysis = async (req, res) => {
   try {
-    const { id } = req.params;
-    const analysis = await Analysis.findByPk(id);
+    const deleted = await analysisService.deleteAnalysis(req.params.id);
 
-    if (!analysis) {
-      return res.status(404).json({ error: 'Análise não encontrada.' });
+    if (!deleted) {
+      return res.status(404).json({ error: 'Analise nao encontrada.' });
     }
 
-    await analysis.destroy();
-    return res.status(200).json({ message: 'Análise deletada com sucesso.' });
+    return res.status(200).json({ message: 'Analise deletada com sucesso.' });
   } catch (error) {
-    console.error('Erro ao deletar análise:', error);
+    console.error('Erro ao deletar analise:', error);
+    return res.status(500).json({ error: 'Erro interno do servidor.' });
+  }
+};
+
+exports.getRuntimeStats = async (_req, res) => {
+  try {
+    return res.status(200).json(analysisService.getRuntimeStats());
+  } catch (error) {
+    console.error('Erro ao buscar estatisticas:', error);
     return res.status(500).json({ error: 'Erro interno do servidor.' });
   }
 };

@@ -1,28 +1,33 @@
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
-const sequelize = require('./config/database');
 const analysisRoutes = require('./routes/analysisRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const FRONTEND_DIR = path.join(__dirname, '..');
 
-// Adiciona o middleware CORS
 app.use(cors());
-
-// Middleware para processar JSON nas requisições
 app.use(express.json());
 
-// Adiciona as rotas de análise com o prefixo '/api/analyses'
+app.use('/styles', express.static(path.join(FRONTEND_DIR, 'styles')));
+app.use('/scripts', express.static(path.join(FRONTEND_DIR, 'scripts')));
+app.use('/locales', express.static(path.join(FRONTEND_DIR, 'locales')));
+
 app.use('/api/analyses', analysisRoutes);
 
-// Sincroniza os modelos e inicia o servidor
-sequelize.sync()
-  .then(() => {
-    console.log('Tabelas sincronizadas com sucesso.');
-    app.listen(PORT, () => {
-      console.log(`Servidor rodando em http://localhost:${PORT}`);
-    });
-  })
-  .catch(err => {
-    console.error('Erro ao conectar com o banco de dados:', err);
-  });
+app.get('/', (_req, res) => {
+  res.sendFile(path.join(FRONTEND_DIR, 'index.html'));
+});
+
+app.get('/index.html', (_req, res) => {
+  res.sendFile(path.join(FRONTEND_DIR, 'index.html'));
+});
+
+app.get('/report.html', (_req, res) => {
+  res.sendFile(path.join(FRONTEND_DIR, 'report.html'));
+});
+
+app.listen(PORT, () => {
+  console.log(`Servidor rodando em http://localhost:${PORT}`);
+});

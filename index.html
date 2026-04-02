@@ -3,67 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard | Análise de Acessibilidade</title>
+    <title>Dashboard | Analise de Acessibilidade</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="styles/globals.css">
+    <link rel="stylesheet" href="styles/main.css">
 </head>
-<body class="bg-gray-50 dark:bg-gray-900 font-sans antialiased text-foreground">
-    
-    <header class="w-full border-b bg-white/80 backdrop-blur-sm dark:bg-gray-800 dark:border-gray-700">
-        <div class="container mx-auto px-4 py-4 flex items-center justify-between">
-            <div class="flex items-center">
-                <h1 class="text-2xl font-bold text-foreground">Framework de Análise de Acessibilidade</h1>
-            </div>
-            <div class="flex items-center gap-6">
-                <nav class="flex items-center gap-6">
-                    <a href="#" class="text-base font-medium text-primary">Dashboard</a>
-                    <a href="#" class="text-base text-muted-foreground hover:text-foreground">Sobre</a>
+<body>
+    <div class="page-shell">
+        <header class="topbar">
+            <div class="shell-content topbar-inner">
+                <a href="index.html" class="brand-mark">
+                    <span class="brand-icon">A11Y</span>
+                    <div>
+                        <p class="eyebrow">Plataforma de monitoramento</p>
+                        <h1>Analise de acessibilidade web</h1>
+                    </div>
+                </a>
+                <nav class="top-nav" aria-label="Navegacao principal">
+                    <a href="index.html" aria-current="page">Dashboard</a>
+                    <a href="#analyses-heading">Analises</a>
                 </nav>
             </div>
-        </div>
-    </header>
-    
-    <main class="container mx-auto px-4 py-8 space-y-8">
-        
-        <div class="w-full max-w-4xl mx-auto p-8 bg-white rounded-lg border dark:bg-gray-800 dark:border-gray-700">
-            <div class="text-center mb-8">
-                <h2 class="text-2xl font-bold mb-3">Análise Rápida de Acessibilidade</h2>
-                <p class="text-muted-foreground">
-                    Cole a URL de uma página web abaixo para iniciar a análise de acessibilidade de forma automática e gratuita.
-                </p>
-            </div>
-            
-            <form id="url-analysis-form" class="space-y-6">
-                <div class="space-y-2">
-                    <input
-                        id="url-input"
-                        type="url"
-                        placeholder="https://www.exemplo.com.br"
-                        class="w-full h-14 text-lg rounded-lg border-2 px-4 py-2 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        required
-                    />
+        </header>
+
+        <main class="shell-content page-grid">
+            <section class="hero-panel">
+                <div class="hero-copy">
+                    <p class="eyebrow">Diagnostico confiavel</p>
+                    <h2>Entenda o que mais afeta a experiencia real de quem navega.</h2>
+                    <p class="hero-text">
+                        Inicie uma analise automatica, acompanhe o status em tempo real e receba um relatorio
+                        organizado por severidade, com explicacoes claras e proximos passos praticos.
+                    </p>
+                    <ul class="hero-highlights" aria-label="Destaques da plataforma">
+                        <li>Score ponderado por impacto real</li>
+                        <li>Validacoes extras alem do axe-core</li>
+                        <li>Leitura facil para times tecnicos e nao tecnicos</li>
+                    </ul>
                 </div>
-                
-                <div class="flex justify-center">
-                    <button
-                        type="submit"
-                        id="analyze-button"
-                        class="px-8 py-3 text-lg rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed dark:bg-blue-800 dark:hover:bg-blue-900"
-                    >
-                        Analisar
-                    </button>
+
+                <div class="analysis-card">
+                    <div class="section-heading">
+                        <p class="eyebrow">Nova analise</p>
+                        <h3>Avalie uma pagina</h3>
+                        <p>Informe a URL completa da pagina que deseja analisar.</p>
+                    </div>
+
+                    <form id="url-analysis-form" class="space-y-4">
+                        <label class="field-label" for="url-input">URL da pagina</label>
+                        <input
+                            id="url-input"
+                            type="url"
+                            placeholder="https://www.exemplo.com.br"
+                            class="app-input"
+                            required
+                        />
+                        <button type="submit" id="analyze-button" class="primary-button">
+                            Iniciar analise
+                        </button>
+                    </form>
+
+                    <div id="form-feedback" class="feedback-panel hidden" aria-live="polite"></div>
                 </div>
-            </form>
-        </div>
-        
-        <div class="w-full max-w-6xl mx-auto p-8 bg-white rounded-lg border dark:bg-gray-800 dark:border-gray-700">
-            <h2 class="text-xl font-bold mb-6">Últimas Análises</h2>
-            
-            <div id="analyses-table-container">
+            </section>
+
+            <section class="content-panel space-y-6" aria-labelledby="analyses-heading">
+                <div class="section-heading">
+                    <p class="eyebrow">Visao geral</p>
+                    <h2 id="analyses-heading">Analises recentes</h2>
+                    <p>Veja o andamento das analises, o score mais recente e acesse rapidamente o relatorio completo.</p>
                 </div>
-        </div>
-    </main>
-    
+
+                <div id="dashboard-summary" class="summary-grid" aria-live="polite"></div>
+                <div id="analyses-table-container" class="space-y-4" aria-live="polite"></div>
+            </section>
+        </main>
+    </div>
+
+    <script src="scripts/api.js"></script>
+    <script src="scripts/ui-helpers.js"></script>
+    <script src="scripts/dashboard-view.js"></script>
     <script src="scripts/dashboard.js"></script>
 </body>
 </html>
